@@ -141,12 +141,11 @@ set_asid:
 	return asid | ver;
 }
 
-static unsigned long set_mm_asid(struct mm_struct *mm, unsigned int cpu)
+static void set_mm_asid(struct mm_struct *mm, unsigned int cpu)
 {
 	unsigned long flags;
 	bool need_flush_tlb = false;
 	unsigned long cntx, old_active_cntx;
-    unsigned long satp_val;
 
 	cntx = atomic_long_read(&mm->context.id);
 
@@ -190,36 +189,24 @@ static unsigned long set_mm_asid(struct mm_struct *mm, unsigned int cpu)
 	raw_spin_unlock_irqrestore(&context_lock, flags);
 
 switch_mm_fast:
-
-    satp_val = virt_to_pfn(mm->pgd) |
+	csr_write(CSR_SATP, virt_to_pfn(mm->pgd) |
 		  (cntx2asid(cntx) << SATP_ASID_SHIFT) |
-		  satp_mode;
-
-	csr_write(CSR_SATP, satp_val);
+		  satp_mode);
 
 	if (need_flush_tlb)
 		local_flush_tlb_all();
-
-    return satp_val;
 }
 
-static unsigned long set_mm_noasid(struct mm_struct *mm)
+static void set_mm_noasid(struct mm_struct *mm)
 {
 	/* Switch the page table and blindly nuke entire local TLB */
-    unsigned long satp_val;
-
-    satp_val = virt_to_pfn(mm->pgd) | satp_mode;
-	csr_write(CSR_SATP, satp_val);
+	csr_write(CSR_SATP, virt_to_pfn(mm->pgd) | satp_mode);
 	local_flush_tlb_all_asid(0);
-
-
-    return satp_val;
 }
 
-static inline unsigned long set_mm(struct mm_struct *prev,
+static inline void set_mm(struct mm_struct *prev,
 			  struct mm_struct *next, unsigned int cpu)
 {
-    unsigned long satp_val;
 	/*
 	 * The mm_cpumask indicates which harts' TLBs contain the virtual
 	 * address mapping of the mm. Compared to noasid, using asid
@@ -230,13 +217,11 @@ static inline unsigned long set_mm(struct mm_struct *prev,
 	 */
 	cpumask_set_cpu(cpu, mm_cpumask(next));
 	if (static_branch_unlikely(&use_asid_allocator)) {
-		satp_val = set_mm_asid(next, cpu);
+		set_mm_asid(next, cpu);
 	} else {
 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
-		satp_val = set_mm_noasid(next);
+		set_mm_noasid(next);
 	}
-
-    return satp_val;
 }
 
 static int __init asids_init(void)
@@ -334,7 +319,6 @@ void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	struct task_struct *task)
 {
 	unsigned int cpu;
-    unsigned long new_satp;
 
 	if (unlikely(prev == next))
 		return;
@@ -348,18 +332,7 @@ void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 	 */
 	cpu = smp_processor_id();
 
-    if (next == NULL || next == &init_mm){
-        set_mm(prev, next, cpu);
-        new_satp = (unsigned long)NULL;
-    }else{
-        new_satp = set_mm(prev, next, cpu);
-    }
-
-    //send2acc(new_satp);
-    
-    int new_asid = (new_satp >> SATP_ASID_SHIFT) & SATP_ASID_MASK;
-
-    printk("SATP switched, new SATP: 0x%lx, new ASID: 0x%x", new_satp, new_asid);
+	set_mm(prev, next, cpu);
 
 	flush_icache_deferred(next, cpu, task);
 }
