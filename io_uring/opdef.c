@@ -36,6 +36,7 @@
 #include "waitid.h"
 #include "futex.h"
 #include "truncate.h"
+#include "pengops.h"
 
 static int io_no_issue(struct io_kiocb *req, unsigned int issue_flags)
 {
@@ -495,6 +496,12 @@ const struct io_issue_def io_issue_defs[] = {
 		.prep			= io_ftruncate_prep,
 		.issue			= io_ftruncate,
 	},
+    [IORING_OP_PENGPUSH] = {
+		.audit_skip		= 1,
+        .prep           = io_prep_pengpush,
+        .issue          = io_pengpush
+
+    }
 };
 
 const struct io_cold_def io_cold_defs[] = {
@@ -715,6 +722,9 @@ const struct io_cold_def io_cold_defs[] = {
 	},
 	[IORING_OP_FTRUNCATE] = {
 		.name			= "FTRUNCATE",
+	},
+	[IORING_OP_PENGPUSH] = {
+		.name			= "PENGPUSH",
 	},
 };
 
