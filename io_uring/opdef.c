@@ -497,9 +497,13 @@ const struct io_issue_def io_issue_defs[] = {
 		.issue			= io_ftruncate,
 	},
     [IORING_OP_PENGPUSH] = {
-		.audit_skip		= 1,
         .prep           = io_prep_pengpush,
         .issue          = io_pengpush
+
+    },
+    [IORING_OP_PENGPOP] = {
+        .prep           = io_prep_pengpop,
+        .issue          = io_pengpop
 
     }
 };
@@ -725,6 +729,9 @@ const struct io_cold_def io_cold_defs[] = {
 	},
 	[IORING_OP_PENGPUSH] = {
 		.name			= "PENGPUSH",
+	},
+	[IORING_OP_PENGPOP] = {
+		.name			= "PENGPOP",
 	},
 };
 

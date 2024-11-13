@@ -5,4 +5,6 @@
 int io_prep_pengpush(struct io_kiocb *req, const struct io_uring_sqe *sqe);
 int io_pengpush(struct io_kiocb *req, unsigned int issue_flags);
 
+int io_prep_pengpop(struct io_kiocb *req, const struct io_uring_sqe *sqe);
+int io_pengpop(struct io_kiocb *req, unsigned int issue_flags);
 #endif

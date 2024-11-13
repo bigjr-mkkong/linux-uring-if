@@ -258,6 +258,7 @@ enum io_uring_op {
 	IORING_OP_FIXED_FD_INSTALL,
 	IORING_OP_FTRUNCATE,
     IORING_OP_PENGPUSH,
+    IORING_OP_PENGPOP,
 
 	/* this goes last, obviously */
 	IORING_OP_LAST,
