@@ -806,4 +806,18 @@ enum io_uring_socket_op {
 }
 #endif
 
+#define COHORT_MAX_ARGS     8
+enum {
+    RV_CONF_IOMMU           = 0x01,
+    RV_CONF_IOMMU_EXIT      = 0x02,
+    PENG_OP_LAST
+};
+
+
+struct peng_req{
+    unsigned long pg_cmd;
+    unsigned long args[COHORT_MAX_ARGS];
+    int retval;
+};
+
 #endif
