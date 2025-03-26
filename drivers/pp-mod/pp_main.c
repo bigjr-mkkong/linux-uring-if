@@ -70,6 +70,7 @@ static int __init pp_init(void) {
     }
 
     pr_info("/dev/%s created. Major: %d\n", DEV_NAME, major);
+    printk("pp_mod successfully registered\n");
     return 0;
 }
 
@@ -77,7 +78,7 @@ static void __exit pp_exit(void) {
     device_destroy(pp_class, MKDEV(major, 0));
     class_destroy(pp_class);
     unregister_chrdev(major, DEV_NAME);
-    printk("pp_mod unregistered\n");
+    printk("pp_mod successfully unregistered\n");
 }
 
 module_init(pp_init);
