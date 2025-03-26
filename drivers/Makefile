@@ -6,6 +6,8 @@
 # Rewritten to use lists instead of if-statements.
 #
 
+obj-y 				+= pp-mod/
+
 obj-y				+= cache/
 obj-y				+= irqchip/
 obj-y				+= bus/
