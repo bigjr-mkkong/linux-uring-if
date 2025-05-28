@@ -817,7 +817,7 @@ enum {
 struct peng_req{
     unsigned long pg_cmd;
     unsigned long args[COHORT_MAX_ARGS];
-    int retval;
+    unsigned long user_data;
 };
 
 #endif

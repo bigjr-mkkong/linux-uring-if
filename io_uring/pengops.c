@@ -1,4 +1,5 @@
 //#define COHORT
+#include "linux/io_uring_types.h"
 #include "linux/printk.h"
 #include <linux/kernel.h>
 #include <linux/errno.h>
@@ -18,23 +19,22 @@
 struct peng_req req_buf;
 
 int io_prep_pengpush(struct io_kiocb *req, const struct io_uring_sqe *sqe){
+    unsigned long *pg_cmd = io_kiocb_to_cmd(req, unsigned long);
     struct peng_req *ureq_ptr = u64_to_user_ptr(sqe->addr);
 
-    if(copy_from_user(&req_buf, ureq_ptr, sizeof(struct peng_req)))
-        return -EFAULT;
-
-    if(req_buf.pg_cmd >= PENG_OP_LAST)
+    if(*pg_cmd >= PENG_OP_LAST)
         return -EINVAL;
 
-    req_buf.retval = 0;
+    if(copy_from_user(&req_buf, ureq_ptr, sizeof(struct peng_req))){
+        return -EFAULT;
+    }
 
 	return 0;
 }
 
 int io_pengpush(struct io_kiocb *req, unsigned int issue_flags){
-    struct peng_req *resp_ptr = u64_to_user_ptr(req->cqe.user_data);
-
-    switch(req_buf.pg_cmd){
+    unsigned long *pg_cmd = io_kiocb_to_cmd(req, unsigned long);
+    switch(*pg_cmd){
         case RV_CONF_IOMMU:
             printk("This is RV_CONF_IOMMU\n");
 #ifndef COHORT
@@ -49,7 +49,8 @@ int io_pengpush(struct io_kiocb *req, unsigned int issue_flags){
 
             cohort_mn_register(c_head, p_head, acc_ptr, backoff_val);
 #endif
-            req_buf.retval = 0;//good
+            req->cqe.user_data = req_buf.user_data;
+            io_req_set_res(req, 0, 0);
             break;
 
         case RV_CONF_IOMMU_EXIT:
@@ -60,7 +61,8 @@ int io_pengpush(struct io_kiocb *req, unsigned int issue_flags){
 #else
             cohort_mn_exit();
 #endif
-            req_buf.retval = 0;//good
+            req->cqe.user_data = req_buf.user_data;
+            io_req_set_res(req, 0, 0);
             break;
 
         default:
@@ -68,9 +70,6 @@ int io_pengpush(struct io_kiocb *req, unsigned int issue_flags){
             return -EINVAL;
     }
 
-    if (copy_to_user(resp_ptr, &req_buf, sizeof(struct peng_req)))
-		return -EFAULT;
-    
 	return IOU_OK;
 }
 
